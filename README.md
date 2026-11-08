@@ -5,7 +5,7 @@
 **The quantum algorithms industry talks about, from scratch. One NumPy file, every answer checked against exact math.**
 
 [![ci](https://github.com/nakka1/nano-qalgos/actions/workflows/ci.yml/badge.svg)](https://github.com/nakka1/nano-qalgos/actions/workflows/ci.yml)
-![python](https://img.shields.io/badge/python-3.9%2B-blue)
+![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![deps](https://img.shields.io/badge/dependencies-numpy%20only-brightgreen)
 ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 [![demo](https://img.shields.io/badge/try%20it-in%20your%20browser-F2B705)](https://nakka1.github.io/nano-qalgos/)
