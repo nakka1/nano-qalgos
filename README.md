@@ -1,6 +1,6 @@
 <div align="center">
 
-# nano-qalgos
+# nano-Qalgos
 
 **The quantum algorithms industry talks about, from scratch. One NumPy file, every answer checked against exact math.**
 
