@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 440" font-family="Atkinson Hyperlegible, DejaVu Sans, sans-serif">
+<style>
+  .bg{fill:#FFFFFF} .g{stroke:#C9D1DB;stroke-width:1} .t{fill:#5B6675;font-size:13px} .k{fill:#1B2430;font-size:14px;font-weight:700}
+  .mc{stroke:#5B6675;fill:none;stroke-width:3} .q{stroke:#2E9E62;fill:none;stroke-width:3} .dq{fill:#2E9E62}
+  @media (prefers-color-scheme: dark) { .bg{fill:#1E2631} .g{stroke:#34404F} .t{fill:#9AA6B4} .k{fill:#E7ECF2} .mc{stroke:#9AA6B4} .q{stroke:#4CC487} .dq{fill:#4CC487} }
+</style>
+<rect class="bg" width="720" height="440" rx="12"/>
+<line x1="74" x2="696" y1="384.0" y2="384.0" class="g"/><text x="66" y="388.0" class="t" text-anchor="end">$0.01</text><line x1="74" x2="696" y1="266.0" y2="266.0" class="g"/><text x="66" y="270.0" class="t" text-anchor="end">$0.1</text><line x1="74" x2="696" y1="148.0" y2="148.0" class="g"/><text x="66" y="152.0" class="t" text-anchor="end">$1</text><line x1="74" x2="696" y1="30.0" y2="30.0" class="g"/><text x="66" y="34.0" class="t" text-anchor="end">$10</text><text x="74.0" y="406" class="t" text-anchor="middle">10</text><text x="281.3" y="406" class="t" text-anchor="middle">100</text><text x="488.7" y="406" class="t" text-anchor="middle">1,000</text><text x="696.0" y="406" class="t" text-anchor="middle">10,000</text>
+<text x="385.0" y="432" class="t" text-anchor="middle">calls to the pricing circuit (log scale)</text>
+<text x="86" y="370" class="k">option price error at 80% confidence (exact)</text>
+<polyline points="110.5,41.5 175.9,61.1 239.7,74.0 302.9,100.0 365.6,115.3 428.2,132.2 490.7,151.2 553.2,167.8 615.6,186.5 678.0,203.8" class="mc"/>
+<polyline points="110.5,83.2 175.9,65.6 239.7,83.2 302.9,132.5 365.6,221.0 428.2,202.6 490.7,302.0 553.2,268.0 615.6,302.0 678.0,340.3" class="q"/><circle cx="110.5" cy="83.2" r="4" class="dq"/><circle cx="175.9" cy="65.6" r="4" class="dq"/><circle cx="239.7" cy="83.2" r="4" class="dq"/><circle cx="302.9" cy="132.5" r="4" class="dq"/><circle cx="365.6" cy="221.0" r="4" class="dq"/><circle cx="428.2" cy="202.6" r="4" class="dq"/><circle cx="490.7" cy="302.0" r="4" class="dq"/><circle cx="553.2" cy="268.0" r="4" class="dq"/><circle cx="615.6" cy="302.0" r="4" class="dq"/><circle cx="678.0" cy="340.3" r="4" class="dq"/>
+<text x="553.2" y="145.8" class="t" text-anchor="middle">Monte Carlo ∝ 1/√M</text>
+<text x="490.7" y="328.0" class="t" text-anchor="middle">amplitude estimation ∝ 1/M</text>
+<text x="672.0" y="362.3" class="k" text-anchor="end">14× smaller at 8,191 calls</text>
+</svg>

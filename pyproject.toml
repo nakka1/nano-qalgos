@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nano-qalgos"
+version = "0.1.0"
+description = "QFT, phase estimation, Grover, Shor, VQE, QAOA and amplitude estimation from scratch: one readable NumPy file, every result checked against an exact answer."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Alexandre O. S. Santos" }]
+requires-python = ">=3.9"
+dependencies = ["numpy>=1.22"]
+keywords = ["quantum", "algorithms", "Shor", "Grover", "VQE", "QAOA", "amplitude estimation", "education", "numpy"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Scientific/Engineering :: Physics",
+  "Intended Audience :: Education",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "pillow>=9"]
+
+[project.urls]
+Homepage = "https://github.com/nakka1/nano-qalgos"
+Demo = "https://nakka1.github.io/nano-qalgos/"
+
+[project.scripts]
+nanoqalgos = "nanoqalgos_cli:main"
+
+[tool.setuptools]
+py-modules = ["nanoqalgos", "nanoqalgos_cli", "nanoqalgos_math"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

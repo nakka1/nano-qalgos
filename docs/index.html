@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nano-qalgos · quantum algorithms in your browser</title>
+<meta name="description" content="Step through Grover, factor with Shor and price an option with amplitude estimation — exact NumPy simulations running in WebAssembly.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #EEF1F4; --panel: #FFFFFF; --ink: #1B2430; --muted: #5B6675; --line: #C9D1DB;
+    --bar: #2163B0; --bar-soft: #A9C3E4; --hot: #D9483B; --mark: #F2B705; --ok: #2E9E62;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #151B23; --panel: #1E2631; --ink: #E7ECF2; --muted: #9AA6B4; --line: #34404F;
+      --bar: #5B9BE6; --bar-soft: #2F4A6E; --hot: #F0705F; --ok: #4CC487;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink);
+         font: 17px/1.5 "Atkinson Hyperlegible", system-ui, sans-serif; }
+  main { max-width: 1120px; margin: 0 auto; padding: 32px 16px 48px; }
+  h1 { font-size: 2rem; line-height: 1.15; margin: 0 0 .35rem; letter-spacing: -.01em; }
+  .lede { margin: 0 0 1.25rem; color: var(--muted); max-width: 64ch; }
+  [role=tablist] { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  [role=tab] { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+               border-radius: 999px; padding: 7px 16px; cursor: pointer; }
+  [role=tab][aria-selected=true] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  .stage { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 28px; align-items: start; }
+  @media (max-width: 820px) { .stage { grid-template-columns: 1fr; } }
+  .board { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+  svg { width: 100%; height: auto; display: block; }
+  .side { display: grid; gap: 16px; }
+  .group { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .group h2 { font-size: 1rem; margin: 0 0 .5rem; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  button, select { font: inherit; font-size: .95rem; border: 1px solid var(--line); background: var(--paper);
+           color: var(--ink); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+  button.primary { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  button:disabled { opacity: .45; cursor: progress; }
+  :focus-visible { outline: 3px solid var(--mark); outline-offset: 2px; }
+  input[type=range] { flex: 1; accent-color: var(--ink); }
+  .readout { margin: 0; min-height: 3em; }
+  .math { font-style: italic; }
+  .num { font-variant-numeric: tabular-nums; }
+  strong.ok { color: var(--ok); }
+  ol.peaks { margin: .25rem 0 0; padding-left: 1.2rem; font-size: .93rem; }
+  footer { margin-top: 2rem; color: var(--muted); font-size: .9rem; }
+  a { color: var(--bar); }
+  [hidden] { display: none !important; }
+  .axis { fill: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Run the algorithms. Check the math.</h1>
+  <p class="lede">Three quantum algorithms from <a href="https://github.com/nakka1/nano-qalgos/blob/main/nanoqalgos.py">nanoqalgos.py</a>,
+    simulated exactly, amplitude by amplitude, by real Python running in your browser.
+    Want the proof? <a href="math.html">See every equation next to the code that implements it</a>.</p>
+
+  <div role="tablist" aria-label="Algorithm">
+    <button role="tab" id="tab-grover" aria-controls="p-grover" aria-selected="true">Grover search</button>
+    <button role="tab" id="tab-shor" aria-controls="p-shor" aria-selected="false">Shor factoring</button>
+    <button role="tab" id="tab-qae" aria-controls="p-qae" aria-selected="false">Option pricing (QAE)</button>
+  </div>
+  <p class="readout" id="status" aria-live="polite">Loading Python and NumPy (WebAssembly, about 10 MB the first time)…</p>
+
+  <!-- Grover ------------------------------------------------------------- -->
+  <section id="p-grover" role="tabpanel" aria-labelledby="tab-grover" class="stage">
+    <div class="board"><svg id="g-chart" role="img" aria-label="Amplitude of every basis state"></svg></div>
+    <div class="side">
+      <div class="group">
+        <h2>Search space</h2>
+        <div class="row"><label for="g-n">Qubits</label>
+          <select id="g-n"><option>3</option><option>4</option><option selected>5</option><option>6</option></select>
+          <span class="num" id="g-N"></span></div>
+        <p style="margin:.5rem 0 0;color:var(--muted);font-size:.93rem">Click any bar to hide the answer there.</p>
+      </div>
+      <div class="group">
+        <h2 id="g-step">Start</h2>
+        <p class="readout" id="g-text"></p>
+        <div class="row" style="margin-top:8px">
+          <button class="primary" id="g-next" disabled>Next step</button>
+          <button id="g-reset" disabled>Start over</button>
+        </div>
+      </div>
+      <div class="group num" id="g-stats"></div>
+    </div>
+  </section>
+
+  <!-- Shor --------------------------------------------------------------- -->
+  <section id="p-shor" role="tabpanel" aria-labelledby="tab-shor" class="stage" hidden>
+    <div class="board"><svg id="s-chart" role="img" aria-label="Probability of each measurement outcome"></svg></div>
+    <div class="side">
+      <div class="group">
+        <h2>Number to factor</h2>
+        <div class="row">
+          <label for="s-N">N</label>
+          <select id="s-N"><option>15</option><option selected>21</option><option>33</option><option>35</option>
+            <option>39</option><option>51</option><option>55</option><option>57</option></select>
+          <label for="s-a">a</label><select id="s-a"></select>
+          <button class="primary" id="s-run" disabled>Measure once</button>
+        </div>
+      </div>
+      <div class="group">
+        <h2>Peaks and what they say</h2>
+        <p class="readout" id="s-text"></p>
+        <ol class="peaks num" id="s-peaks"></ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- QAE ---------------------------------------------------------------- -->
+  <section id="p-qae" role="tabpanel" aria-labelledby="tab-qae" class="stage" hidden>
+    <div class="board"><svg id="q-chart" role="img" aria-label="Distribution of the amplitude estimate"></svg></div>
+    <div class="side">
+      <div class="group">
+        <h2>Precision</h2>
+        <div class="row"><label for="q-t">Counting qubits</label>
+          <input id="q-t" type="range" min="3" max="10" step="1" value="6"><span class="num" id="q-tval">6</span></div>
+        <p style="margin:.5rem 0 0;color:var(--muted);font-size:.93rem">European call, S₀ = 100, K = 105, σ = 20%, r = 5%, 1 year, 16 price points.</p>
+      </div>
+      <div class="group">
+        <h2>Same budget, two methods</h2>
+        <p class="readout num" id="q-text"></p>
+      </div>
+    </div>
+  </section>
+
+  <footer>Pure NumPy, no quantum SDK. Source, tests and the math:
+    <a href="https://github.com/nakka1/nano-qalgos">github.com/nakka1/nano-qalgos</a>. Runs on <a href="https://pyodide.org">Pyodide</a>.</footer>
+</main>
+
+<script src="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.js"></script>
+<script>
+const GLUE = `
+import json, math, numpy as np, nanoqalgos as q
+def grover_trace(n, marked):
+    _, theta, steps = q.grover(n, [marked], trace=True)
+    return json.dumps({"theta": float(theta), "steps": [[s, a.tolist()] for s, a in steps]})
+def coprimes(N):
+    return json.dumps([a for a in range(2, N - 1) if math.gcd(a, N) == 1])
+def shor_dist(N, a):
+    probs, t = q.order_finding(a, N)
+    r = next(k for k in range(1, N) if pow(a, k, N) == 1)
+    peaks = []
+    for y in [int(y) for y in np.argsort(probs)[::-1][:12] if probs[y] > 1e-6]:
+        rr, fac = q.factors_from_measurement(y, t, a, N)
+        s_, d_ = [c for c in q.convergents(y, 2 ** t) if c[1] < N][-1]
+        peaks.append([y, float(probs[y]), s_, d_, rr, sorted(fac) if fac else None])
+    good = sum(float(probs[y]) for y in range(len(probs)) if q.factors_from_measurement(y, t, a, N)[1])
+    return json.dumps({"t": t, "r": r, "probs": probs.tolist(), "peaks": sorted(peaks), "success": good})
+def shor_sample(N, a):
+    probs, t = q.order_finding(a, N)
+    y = int(np.random.default_rng().choice(len(probs), p=probs / probs.sum()))
+    rr, fac = q.factors_from_measurement(y, t, a, N)
+    return json.dumps({"y": y, "r": rr, "fac": sorted(fac) if fac else None})
+_p, _f, _scale, _bs = q.european_call()
+def qae(t):
+    est, probs, a = q.amplitude_estimation(_p, _f, t)
+    calls = 2 * (2 ** t - 1) + 1
+    return json.dumps({"est": est.tolist(), "probs": probs.tolist(), "a": a, "scale": _scale, "bs": _bs,
+        "calls": calls, "err_q": q.error_at_confidence(est, probs, a), "err_mc": q.monte_carlo_error(a, calls)})
+`;
+const NS = "http://www.w3.org/2000/svg", $ = (id) => document.getElementById(id);
+let py;
+const call = (fn, ...args) => JSON.parse(py.globals.get(fn)(...args));
+
+function el(tag, attrs, parent, text) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text !== undefined) e.textContent = text;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+/* Bar chart: values (may be negative), opts {color(i), y0, y1, ref:[{y,label}], vref:[{x,label}], onClick, xLabel} */
+function bars(svg, values, o) {
+  const W = 720, H = 400, L = 52, R = 14, T = 16, B = 40;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.replaceChildren();
+  const n = values.length, bw = (W - L - R) / n;
+  const Y = (v) => T + (o.y1 - v) / (o.y1 - o.y0) * (H - T - B);
+  for (const tk of o.ticks || []) {
+    el("line", { x1: L, x2: W - R, y1: Y(tk), y2: Y(tk), stroke: "var(--line)" }, svg);
+    el("text", { x: L - 8, y: Y(tk) + 4, "text-anchor": "end", class: "axis" }, svg, o.fmt ? o.fmt(tk) : tk);
+  }
+  values.forEach((v, i) => {
+    const x = L + i * bw, y = Math.min(Y(v), Y(0)), h = Math.max(Math.abs(Y(v) - Y(0)), v ? 1 : 0);
+    const r = el("rect", { x: x + bw * 0.12, y, width: Math.max(bw * 0.76, 1), height: h, fill: o.color(i) }, svg);
+    if (o.onClick) {
+      const hit = el("rect", { x, y: T, width: bw, height: H - T - B, fill: "transparent", tabindex: 0,
+        role: "button", "aria-label": `basis state ${i}`, style: "cursor:pointer" }, svg);
+      hit.addEventListener("click", () => o.onClick(i));
+      hit.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); o.onClick(i); } });
+    }
+  });
+  for (const ref of o.ref || []) {
+    el("line", { x1: L, x2: W - R, y1: Y(ref.y), y2: Y(ref.y), stroke: "var(--ink)", "stroke-dasharray": "6 5", "stroke-width": 1.5 }, svg);
+    el("text", { x: W - R, y: Y(ref.y) - 6, "text-anchor": "end", class: "axis" }, svg, ref.label);
+  }
+  for (const ref of o.vref || []) {
+    const x = L + ref.x * (W - L - R);
+    el("line", { x1: x, x2: x, y1: T, y2: H - B, stroke: "var(--hot)", "stroke-width": 2 }, svg);
+    el("text", { x: x + 6, y: T + 14, class: "axis" }, svg, ref.label);
+  }
+  el("line", { x1: L, x2: W - R, y1: Y(o.y0 < 0 ? 0 : o.y0), y2: Y(o.y0 < 0 ? 0 : o.y0), stroke: "var(--muted)" }, svg);
+  if (o.xLabel) el("text", { x: (L + W - R) / 2, y: H - 10, "text-anchor": "middle", class: "axis" }, svg, o.xLabel);
+}
+
+/* ---------------- Grover ---------------- */
+const G = { n: 5, marked: 13, trace: null, i: 0 };
+function groverLoad() {
+  G.trace = call("grover_trace", G.n, G.marked); G.i = 0;
+  $("g-N").textContent = `N = ${2 ** G.n} items`;
+  groverDraw();
+}
+function groverDraw() {
+  const [name, amps] = G.trace.steps[G.i], m = G.marked;
+  const k = Math.floor(G.i / 2), round = Math.ceil(G.i / 2);  // k = finished rounds
+  const mean = amps.reduce((s, v) => s + v, 0) / amps.length;
+  bars($("g-chart"), amps, { y0: -1, y1: 1, ticks: [-1, -0.5, 0, 0.5, 1],
+    color: (i) => i === m ? "var(--hot)" : "var(--bar)", ref: [{ y: mean, label: "mean amplitude" }],
+    onClick: (i) => { G.marked = i; groverLoad(); }, xLabel: "basis states |0⟩ … |N−1⟩ (amplitudes are real here)" });
+  const last = G.i === G.trace.steps.length - 1;
+  $("g-step").textContent = name === "start" ? "Start: equal superposition" :
+    name.startsWith("oracle") ? `Round ${round}: oracle` : `Round ${round}: diffusion`;
+  $("g-text").innerHTML = name === "start"
+    ? `Every item has amplitude 1/√N. Measuring now finds the answer with probability 1/N.`
+    : name.startsWith("oracle")
+    ? `The oracle flips the sign of the marked amplitude. Probabilities do not change yet, but the mean drops a little.`
+    : `Diffusion reflects every amplitude about the mean: <span class="math">a → 2·mean − a</span>. The flipped one lands far above the rest.`;
+  const p = amps[m] ** 2, theta = G.trace.theta, formula = Math.sin((2 * k + 1) * theta) ** 2;
+  $("g-stats").innerHTML = `P(answer) = <strong>${p.toFixed(4)}</strong><br>` +
+    `formula sin²((2k+1)θ) = ${formula.toFixed(4)} with k = ${k}, θ = ${theta.toFixed(4)}<br>` +
+    `Grover needs ${(G.trace.steps.length - 1) / 2} rounds; a classical search needs ${((2 ** G.n + 1) / 2).toFixed(1)} guesses on average.`;
+  $("g-next").disabled = last; $("g-next").textContent = last ? "Done" : "Next step";
+}
+
+/* ---------------- Shor ---------------- */
+const S = { N: 21, a: 2, d: null };
+function shorFillA() {
+  const opts = call("coprimes", S.N);
+  $("s-a").replaceChildren(...opts.map((a) => { const o = document.createElement("option"); o.textContent = a; return o; }));
+  S.a = opts[0];
+}
+function shorLoad() {
+  S.d = call("shor_dist", S.N, S.a);
+  const M = S.d.probs.length, max = Math.max(...S.d.probs);
+  bars($("s-chart"), S.d.probs, { y0: 0, y1: max * 1.1, ticks: [0, max / 2, max].map((v) => +v.toFixed(3)),
+    color: () => "var(--bar)", vref: [], xLabel: `measured y, from 0 to ${M - 1} (${S.d.t} counting qubits)` });
+  $("s-text").innerHTML = `The order of ${S.a} mod ${S.N} is <strong>r = ${S.d.r}</strong>, so peaks sit near multiples of 2<sup>${S.d.t}</sup>/${S.d.r}. ` +
+    `One measurement factors ${S.N} with probability <strong>${(S.d.success * 100).toFixed(0)}%</strong>.`;
+  $("s-peaks").replaceChildren(...S.d.peaks.slice(0, 12).map(([y, p, s, d, r, fac]) => {
+    const li = document.createElement("li");
+    li.innerHTML = y === 0 ? `y = 0 (${(p * 100).toFixed(1)}%): no information` :
+      fac ? `y = ${y} (${(p * 100).toFixed(1)}%): ≈ ${s}/${d} → r = ${r} → <strong class="ok">${fac[0]} × ${fac[1]}</strong>` :
+      `y = ${y} (${(p * 100).toFixed(1)}%): ≈ ${s}/${d}, ${d} only divides r`;
+    return li;
+  }));
+}
+
+/* ---------------- QAE ---------------- */
+function qaeLoad() {
+  const t = +$("q-t").value; $("q-tval").textContent = t;
+  const d = call("qae", t), svg = $("q-chart");
+  const W = 720, H = 400, L = 52, R = 14, T = 30, B = 46;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.replaceChildren();
+  const hw = Math.max(d.err_mc * 1.6, 0.02), lo = d.a - hw, hi = d.a + hw;
+  const pts = d.est.map((e, y) => [e, d.probs[y]]).filter(([e]) => e >= lo && e <= hi);
+  const merged = new Map();  // y and M - y give the same estimate
+  pts.forEach(([e, p]) => merged.set(e.toFixed(10), (merged.get(e.toFixed(10)) || 0) + p));
+  const ymax = Math.max(0.05, ...merged.values()) * 1.1;
+  const X = (e) => L + (e - lo) / (hi - lo) * (W - L - R), Y = (p) => T + (1 - p / ymax) * (H - T - B);
+  const band = (e, fill, label, row) => {
+    el("rect", { x: X(d.a - e), y: T, width: X(d.a + e) - X(d.a - e), height: H - T - B, fill, opacity: 0.18 }, svg);
+    el("text", { x: X(d.a + e) + 4, y: T + 14 + row * 16, class: "axis" }, svg, label);
+  };
+  band(d.err_mc, "var(--muted)", "Monte Carlo, 80%", 0);
+  band(d.err_q, "var(--ok)", "amplitude estimation, 80%", 1);
+  for (const [k, p] of merged) {
+    const x = X(+k);
+    el("line", { x1: x, x2: x, y1: Y(0), y2: Y(p), stroke: "var(--bar)", "stroke-width": 3 }, svg);
+    el("circle", { cx: x, cy: Y(p), r: 4, fill: "var(--bar)" }, svg);
+  }
+  el("line", { x1: X(d.a), x2: X(d.a), y1: T, y2: H - B, stroke: "var(--hot)", "stroke-width": 2 }, svg);
+  el("line", { x1: L, x2: W - R, y1: Y(0), y2: Y(0), stroke: "var(--muted)" }, svg);
+  for (const e of [lo, d.a, hi])
+    el("text", { x: X(e), y: H - B + 18, "text-anchor": "middle", class: "axis" }, svg, (e * d.scale).toFixed(3));
+  el("text", { x: (L + W - R) / 2, y: H - 8, "text-anchor": "middle", class: "axis" }, svg,
+     "estimated price (red line: true price); dots: exact probability of each estimate");
+  const price = d.a * d.scale;
+  $("q-text").innerHTML = `Price on the 16-point grid: <strong>${price.toFixed(4)}</strong> (Black-Scholes ${d.bs.toFixed(4)}).<br>` +
+    `With ${d.calls.toLocaleString()} calls to the pricing circuit, 80% of the time:<br>` +
+    `amplitude estimation is within <strong class="ok">±${(d.err_q * d.scale).toFixed(4)}</strong><br>` +
+    `Monte Carlo is within ±${(d.err_mc * d.scale).toFixed(4)}<br>` +
+    `<span style="color:var(--muted)">Both from exact distributions. Move the slider: the green band shrinks like 1/M, the grey one like 1/√M.</span>`;
+}
+
+/* ---------------- wiring ---------------- */
+document.querySelectorAll("[role=tab]").forEach((tab) => tab.addEventListener("click", () => {
+  document.querySelectorAll("[role=tab]").forEach((t) => {
+    const on = t === tab; t.setAttribute("aria-selected", on);
+    $(t.getAttribute("aria-controls")).hidden = !on;
+  });
+  if (py && tab.id === "tab-shor" && !S.d) shorLoad();
+  if (py && tab.id === "tab-qae") qaeLoad();
+}));
+$("g-n").onchange = () => { G.n = +$("g-n").value; G.marked = Math.min(G.marked, 2 ** G.n - 1); groverLoad(); };
+$("g-next").onclick = () => { G.i = Math.min(G.i + 1, G.trace.steps.length - 1); groverDraw(); };
+$("g-reset").onclick = () => { G.i = 0; groverDraw(); };
+$("s-N").onchange = () => { S.N = +$("s-N").value; shorFillA(); shorLoad(); };
+$("s-a").onchange = () => { S.a = +$("s-a").value; shorLoad(); };
+$("s-run").onclick = () => {
+  const r = call("shor_sample", S.N, S.a);
+  $("s-text").innerHTML = `Measured <strong>y = ${r.y}</strong>. ` + (r.fac
+    ? `Continued fractions give r = ${r.r}, and gcd(a<sup>r/2</sup> ± 1, N) gives <strong class="ok">${S.N} = ${r.fac[0]} × ${r.fac[1]}</strong>.`
+    : `This outcome does not reveal the factors. Measure again: each run succeeds with probability ${(S.d.success * 100).toFixed(0)}%.`);
+};
+$("q-t").oninput = () => qaeLoad();
+
+async function boot() {
+  const pyo = await loadPyodide();
+  await pyo.loadPackage("numpy");
+  let src = null;
+  for (const url of ["nanoqalgos.py", "../nanoqalgos.py"]) {
+    const r = await fetch(url);
+    if (r.ok) { src = await r.text(); break; }
+  }
+  if (!src) throw new Error("nanoqalgos.py not found next to this page");
+  pyo.FS.writeFile("nanoqalgos.py", src);
+  pyo.runPython("import sys; sys.path.insert(0, '.')");
+  pyo.runPython(GLUE);
+  py = pyo;
+  document.querySelectorAll("button").forEach((b) => (b.disabled = false));
+  $("status").hidden = true;
+  groverLoad(); shorFillA();
+}
+boot().catch((e) => { $("status").textContent = "Could not start Python: " + e.message +
+  ". Serve this folder over HTTP (python -m http.server) instead of opening the file directly."; });
+</script>
+</body>
+</html>

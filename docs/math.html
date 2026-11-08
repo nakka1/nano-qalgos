@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nano-qalgos · the math next to the code</title>
+<meta name="description" content="Every equation of nanoqalgos.py next to the exact lines that implement it, with a live numerical check that the two agree.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.47/dist/katex.min.css">
+<style>
+  :root {
+    --paper: #EEF1F4; --panel: #FFFFFF; --ink: #1B2430; --muted: #5B6675; --line: #C9D1DB; --link: #2163B0;
+    --ok: #2E9E62; --bad: #B3261E; --code-bg: #F6F8FA;
+    /* one color per term letter: a, b, c, d */
+    --ta: #0E8A8A; --tb: #B0399A; --tc: #B7791F; --td: #2163B0;
+    --ta-soft: #D3EEEE; --tb-soft: #F3DCEF; --tc-soft: #F6E7CC; --td-soft: #D7E3F4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #151B23; --panel: #1E2631; --ink: #E7ECF2; --muted: #9AA6B4; --line: #34404F; --link: #5B9BE6;
+      --ok: #4CC487; --bad: #F2867E; --code-bg: #18202A;
+      --ta: #4FD1D1; --tb: #E17BD0; --tc: #F0B45A; --td: #6FA6EC;
+      --ta-soft: #133B3E; --tb-soft: #3E2040; --tc-soft: #3F3018; --td-soft: #1D3150;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink);
+         font: 17px/1.5 "Atkinson Hyperlegible", system-ui, sans-serif; }
+  main { max-width: 1240px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 2rem; line-height: 1.15; margin: 0 0 .35rem; letter-spacing: -.01em; }
+  .lede { margin: 0 0 1rem; color: var(--muted); max-width: 70ch; }
+  a { color: var(--link); }
+  nav.parts { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0 0 8px; font-size: .95rem; }
+  nav.parts b { font-weight: 700; }
+  #summary { margin: 0 0 24px; min-height: 1.5em; }
+  #summary strong.ok { color: var(--ok); }
+  h2.part { font-size: 1.35rem; margin: 40px 0 12px; }
+  article { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 0;
+            background: var(--panel); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 18px;
+            overflow: hidden; scroll-margin-top: 16px; }
+  @media (max-width: 900px) { article { grid-template-columns: 1fr; } }
+  .math { padding: 18px 20px; display: grid; gap: 12px; align-content: start; }
+  .math h3 { margin: 0; font-size: 1.05rem; }
+  .math h3 .id { color: var(--muted); font-weight: 400; }
+  .formula { overflow-x: auto; padding: 4px 0; }
+  .formula .katex-display { margin: 0; }
+  @media (max-width: 600px) { .formula .katex-display { font-size: .8em; } }
+  ul.terms { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: .95rem; }
+  ul.terms li { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: baseline;
+                padding: 3px 6px; border-radius: 6px; cursor: default; }
+  ul.terms li:focus-visible, .codeline:focus-visible { outline: 3px solid var(--tc); outline-offset: 1px; }
+  .chip { display: inline-grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 50%;
+          font-weight: 700; font-size: .85rem; color: var(--panel); }
+  .lines { color: var(--muted); font-size: .85rem; white-space: nowrap; }
+  .note { margin: 0; color: var(--muted); font-size: .9rem; }
+  .check { border-top: 1px solid var(--line); padding-top: 10px; font-size: .92rem; display: grid; gap: 4px; }
+  .check .vals { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .82rem;
+                 color: var(--muted); overflow-wrap: anywhere; }
+  .check .verdict.ok { color: var(--ok); font-weight: 700; }
+  .check .verdict.bad { color: var(--bad); font-weight: 700; }
+  .check button { justify-self: start; font: inherit; font-size: .9rem; border: 1px solid var(--line);
+                  background: var(--paper); color: var(--ink); border-radius: 8px; padding: 5px 10px; cursor: pointer; }
+  .code { background: var(--code-bg); border-left: 1px solid var(--line); overflow-x: auto; padding: 12px 0; }
+  @media (max-width: 900px) { .code { border-left: 0; border-top: 1px solid var(--line); } }
+  .code .file { font-size: .82rem; color: var(--muted); padding: 0 16px 8px; }
+  pre { margin: 0; font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .codeline { display: grid; grid-template-columns: 2.2em 3.2em auto; padding-right: 16px; min-width: max-content;
+              border-left: 4px solid transparent; }
+  .codeline .tag { text-align: center; font-weight: 700; }
+  .codeline .num { color: var(--muted); text-align: right; padding-right: 12px; text-decoration: none; }
+  .codeline .cm { color: var(--muted); }
+  .codeline.tagged { cursor: default; }
+  /* term colors: soft when idle, strong when its term is hovered or focused */
+  [data-c="a"] { --c: var(--ta); --cs: var(--ta-soft); }
+  [data-c="b"] { --c: var(--tb); --cs: var(--tb-soft); }
+  [data-c="c"] { --c: var(--tc); --cs: var(--tc-soft); }
+  [data-c="d"] { --c: var(--td); --cs: var(--td-soft); }
+  .codeline.tagged { background: color-mix(in srgb, var(--cs) 55%, transparent); border-left-color: var(--c); }
+  .codeline.tagged .tag { color: var(--c); }
+  .codeline.lit { background: var(--cs); }
+  .chip { background: var(--c); }
+  ul.terms li.lit { background: var(--cs); }
+  .formula .term { border-radius: 4px; padding: 0 1px; transition: background .12s; color: var(--c); cursor: default; }
+  .formula .term.lit { background: var(--cs); }
+  .loading { color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { .formula .term { transition: none; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>The math, next to the code</h1>
+  <p class="lede">Each equation from <a href="https://github.com/nakka1/nano-qalgos/blob/main/nanoqalgos.py">nanoqalgos.py</a>
+    sits beside the exact lines that implement it. Point at a term of the formula and its code lights up, or point at a line
+    to find its term. Every check computes the formula independently with NumPy and compares it with what the code returns,
+    live, in your browser. <a href="./">Back to the demos</a>.</p>
+  <nav class="parts" id="parts" aria-label="Parts"></nav>
+  <p id="summary" class="loading" aria-live="polite">Loading Python and NumPy (WebAssembly, about 10 MB the first time)…</p>
+  <div id="eqs"></div>
+  <p class="note">Same content as <a href="https://github.com/nakka1/nano-qalgos/blob/main/MATH.md">MATH.md</a> and
+    <code>nanoqalgos verify</code> in the terminal; all three are generated from <code>nanoqalgos_math.py</code>.</p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.47/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.js"></script>
+<script>
+const REPO = "https://github.com/nakka1/nano-qalgos/blob/main/nanoqalgos.py";
+const GLUE = `
+import json, nanoqalgos_math as m
+def catalog():
+    eqs = [{"id": e.id, "part": e.part, "title": e.title, "tex": e.tex, "terms": e.terms, "note": e.note,
+            "func": e.func, "lines": [[n, t, tags] for n, t, tags in m.source(e)]} for e in m.EQS]
+    return json.dumps({"parts": m.PARTS, "eqs": eqs})
+def check(eq_id, seed):
+    return json.dumps(m.run(m.BY_ID[eq_id], seed))
+`;
+const $ = (id) => document.getElementById(id);
+const letter = (tag) => /[a-z]$/.test(tag) ? tag.slice(-1) : "a";   // single-term equations use color "a"
+const label = (tag) => /[a-z]$/.test(tag) ? tag.slice(-1) : "•";
+const cls = (tag) => "t" + tag.replace(".", "_");
+let py;
+
+function h(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const k in attrs) k === "html" ? (e.innerHTML = attrs[k]) : e.setAttribute(k, attrs[k]);
+  e.append(...kids.filter((k) => k !== null && k !== undefined));
+  return e;
+}
+
+function ranges(nums) {
+  const out = [];
+  for (const n of [...new Set(nums)].sort((a, b) => a - b))
+    out.length && n === out[out.length - 1][1] + 1 ? (out[out.length - 1][1] = n) : out.push([n, n]);
+  return out.map(([a, b]) => (a === b ? `${a}` : `${a}–${b}`)).join(", ");
+}
+
+function codeLine([n, text, tags]) {
+  const m = text.match(/^(.*?)(\s+#.*)?$/);
+  const row = h("div", { class: "codeline" + (tags.length ? " tagged" : "") },
+    h("span", { class: "tag" }, tags.map(label).join("")),
+    h("a", { class: "num", href: `${REPO}#L${n}`, target: "_blank", rel: "noopener", "aria-label": `line ${n} on GitHub` }, String(n)),
+    h("span", {}, m[1], m[2] ? h("span", { class: "cm" }, m[2]) : null));
+  if (tags.length) {
+    row.dataset.c = letter(tags[0]);
+    row.dataset.tags = tags.join(" ");
+    row.tabIndex = 0;
+    row.setAttribute("aria-label", `line ${n}, implements term ${tags.map(label).join(", ")}`);
+  }
+  return row;
+}
+
+function light(card, tags, on) {
+  for (const t of tags) {
+    card.querySelectorAll(`.${cls(t)}, [data-term="${t}"]`).forEach((e) => e.classList.toggle("lit", on));
+    card.querySelectorAll(".codeline[data-tags]").forEach((e) => {
+      if (e.dataset.tags.split(" ").includes(t)) e.classList.toggle("lit", on);
+    });
+  }
+}
+
+function bindHover(card, el, tags) {
+  for (const [a, b] of [["mouseenter", "mouseleave"], ["focus", "blur"]]) {
+    el.addEventListener(a, () => light(card, tags, true));
+    el.addEventListener(b, () => light(card, tags, false));
+  }
+}
+
+function render(eq) {
+  const card = h("article", { id: "eq-" + eq.id.replace(".", ""), "aria-labelledby": "h-" + eq.id });
+  const formula = h("div", { class: "formula" });
+  katex.render(eq.tex, formula, { displayMode: true, throwOnError: false, strict: false,
+    trust: (ctx) => ctx.command === "\\htmlClass" });
+  const terms = h("ul", { class: "terms" });
+  for (const [tag, meaning] of Object.entries(eq.terms)) {
+    const nums = eq.lines.filter((l) => l[2].includes(tag)).map((l) => l[0]);
+    const li = h("li", { "data-term": tag, "data-c": letter(tag), tabindex: 0 },
+      h("span", { class: "chip", "aria-hidden": "true" }, label(tag)),
+      h("span", {}, meaning),
+      h("span", { class: "lines" }, (nums.length > 1 ? "lines " : "line ") + ranges(nums)));
+    terms.append(li);
+    bindHover(card, li, [tag]);
+    formula.querySelectorAll("." + cls(tag)).forEach((e) => {
+      e.classList.add("term"); e.dataset.c = letter(tag); bindHover(card, e, [tag]);
+    });
+  }
+  const check = h("div", { class: "check" }, h("span", { class: "loading" }, "checking…"));
+  const math = h("div", { class: "math" },
+    h("h3", { id: "h-" + eq.id }, h("span", { class: "id" }, `eq ${eq.id} · `), eq.title),
+    formula, terms, eq.note ? h("p", { class: "note" }, eq.note) : null, check);
+  const pre = h("pre");
+  eq.lines.forEach((l) => {
+    const row = codeLine(l);
+    pre.append(row);
+    if (l[2].length) bindHover(card, row, l[2]);
+  });
+  const code = h("div", { class: "code" },
+    h("div", { class: "file" }, `nanoqalgos.py · ${eq.func}() · lines ${eq.lines[0][0]}–${eq.lines[eq.lines.length - 1][0]}`), pre);
+  card.append(math, code);
+  card._check = check;
+  card._seed = 0;
+  return card;
+}
+
+function runCheck(eq, card) {
+  const r = JSON.parse(py.globals.get("check")(eq.id, card._seed));
+  const verdict = r.relation === "="
+    ? `max |formula − code| = ${r.gap.toExponential(1)}`
+    : `code ${r.relation} bound, margin ${r.gap >= 0 ? "+" : ""}${r.gap.toFixed(4)}`;
+  const again = h("button", {}, "Check again with new random inputs");
+  again.onclick = () => { card._seed += 1; runCheck(eq, card); };
+  card._check.replaceChildren(
+    h("div", { class: "vals" }, `formula  ${r.formula}`),
+    h("div", { class: "vals" }, `code     ${r.code}`),
+    h("div", { class: "verdict " + (r.ok ? "ok" : "bad") }, (r.ok ? "✓ " : "✗ ") + verdict +
+      (card._seed ? `  (random inputs #${card._seed})` : "")),
+    again);
+  return r.ok;
+}
+
+async function boot() {
+  const pyo = await loadPyodide();
+  await pyo.loadPackage("numpy");
+  for (const name of ["nanoqalgos.py", "nanoqalgos_math.py"]) {
+    let src = null;
+    for (const url of [name, "../" + name]) {
+      const r = await fetch(url);
+      if (r.ok) { src = await r.text(); break; }
+    }
+    if (!src) throw new Error(name + " not found next to this page");
+    pyo.FS.writeFile(name, src);
+  }
+  pyo.runPython("import sys; sys.path.insert(0, '.')");
+  pyo.runPython(GLUE);
+  py = pyo;
+  const { parts, eqs } = JSON.parse(py.globals.get("catalog")());
+  const host = $("eqs");
+  for (const [p, name] of Object.entries(parts)) {
+    const mine = eqs.filter((e) => e.part === +p);
+    $("parts").append(h("span", {}, h("b", {}, `${p} · ${name}`), " ",
+      ...mine.flatMap((e, i) => [i ? " " : "", h("a", { href: "#eq-" + e.id.replace(".", "") }, e.id)])));
+    host.append(h("h2", { class: "part", id: "part-" + p }, `Part ${p} · ${name}`));
+    mine.forEach((e) => { const c = render(e); host.append(c); e._card = c; });
+  }
+  let good = 0;
+  for (const e of eqs) good += runCheck(e, e._card);
+  $("summary").className = "";
+  $("summary").innerHTML = `<strong class="ok">${good}/${eqs.length} equations</strong> match the code, checked just now in your browser.`;
+  if (location.hash) document.querySelector(location.hash)?.scrollIntoView();
+}
+boot().catch((e) => { $("summary").textContent = "Could not start Python: " + e.message +
+  ". Serve this folder over HTTP (python -m http.server) instead of opening the file directly."; });
+</script>
+</body>
+</html>
